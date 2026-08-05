@@ -1,5 +1,21 @@
-# My own little Website
+# bun-react-tailwind-template
 
-I wanted to learn more about HTML/CSS and also how to implement using AI into Coding, so I decided to make a little Website for training purpose.
+To install dependencies:
 
-As of right now i don't want to go too deep into it, but maybe in the future this project will become bigger
+```bash
+bun install
+```
+
+To start a development server:
+
+```bash
+bun dev
+```
+
+To run for production:
+
+```bash
+bun start
+```
+
+This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.

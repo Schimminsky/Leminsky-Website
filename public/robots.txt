@@ -1,0 +1,10 @@
+# Diese Website soll nicht in Suchergebnissen erscheinen.
+#
+# Das Crawling bleibt hier bewusst erlaubt: Der eigentliche Ausschluss
+# passiert ueber "noindex" in jeder Seite und im X-Robots-Tag-Header.
+# Ein "Disallow: /" wuerde verhindern, dass Crawler diesen Hinweis
+# ueberhaupt zu Gesicht bekommen - die Seite koennte dann trotzdem
+# als reiner Link im Index landen.
+
+User-agent: *
+Allow: /
