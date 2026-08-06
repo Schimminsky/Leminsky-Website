@@ -38,10 +38,11 @@ Die Anforderungen sind nach MoSCoW priorisiert, damit bei knapper Zeit klar ist,
 
 | Priorität | Umfang |
 | --- | --- |
-| **Must** | Startseite, Über mich, Projekte, Kontakt, Footer, Impressum, Datenschutz, 404-Seite |
+| **Must** | Startseite, Über mich, Projekte, Kontakt, Footer, Datenschutz, 404-Seite |
 | **Should** | Lebenslauf, Skills |
 | **Could** | Galerie, PDF-Download des Lebenslaufs, Light-/Dark-Umschalter |
 | **Won't (vorerst)** | sämtliche Punkte aus Abschnitt 7 |
+| **Offen** | Impressum – hängt an der ungeklärten Frage in Abschnitt 5 |
 
 ---
 
@@ -125,14 +126,28 @@ Darstellung der Kenntnisse, beispielsweise:
 
 ## 5. Rechtliche Anforderungen
 
-Diese Punkte sind nicht optional, sobald die Seite sich an Recruiter und Arbeitgeber richtet – damit gilt sie als geschäftsmäßig im Sinne des Digitale-Dienste-Gesetzes.
-
-* **Impressum** als eigene Seite mit vollständiger Anbieterkennzeichnung nach § 5 DDG
 * **Datenschutzerklärung** als eigene Seite (Hosting, Server-Logfiles, ggf. Kontaktaufnahme)
 * **Keine externen Ressourcen zur Laufzeit.** Schriftarten, Icons und Skripte werden selbst gehostet. Das Einbinden von Google Fonts per CDN überträgt die IP-Adresse der Besucher in die USA und ist abmahnfähig.
 * **Bildrechte** klären: nur eigene Aufnahmen oder Material mit passender Lizenz
 * **EXIF-Daten** aus allen veröffentlichten Fotos entfernen (enthalten häufig GPS-Koordinaten)
 * Keine Cookies und kein Tracking – dadurch entfällt die Notwendigkeit eines Consent-Banners
+
+### Datenschutzerklärung: unstrittig erforderlich
+
+Sie hängt nicht an der Impressumsfrage weiter unten. Der Server verarbeitet IP-Adressen in Logfiles, und das allein löst die Informationspflicht aus Art. 13 DSGVO aus – unabhängig davon, ob die Seite geschäftsmäßig betrieben wird. Die Seite bleibt damit **Must-have**.
+
+### Impressum: offene Entscheidung
+
+> **Ungeklärt. Vor Phase 2 zu entscheiden, im Zweifel anwaltlich.** Diese Fassung des Dokuments beantwortet die Frage bewusst nicht.
+
+Die frühere Fassung setzte die Impressumspflicht als feststehend voraus. Das kollidiert direkt mit der Vorgabe aus Abschnitt 4, die Wohnanschrift nicht zu veröffentlichen – § 5 DDG verlangt eine **ladungsfähige Anschrift**, und ein Postfach genügt dafür nicht. Beides zugleich geht nicht.
+
+Zu klären ist deshalb, woran § 5 DDG anknüpft: an *geschäftsmäßige, in der Regel gegen Entgelt angebotene* Telemedien. Zwei Lesarten stehen im Raum:
+
+* **Geschäftsmäßig.** Ein Portfolio, das sich ausdrücklich an Recruiter und Arbeitgeber richtet, wird überwiegend so eingeordnet – es dient der Anbahnung eines Erwerbsverhältnisses. Folge: vollständige Anbieterkennzeichnung inklusive ladungsfähiger Anschrift. Abschnitt 4 muss dann angepasst werden, nicht umgekehrt.
+* **Rein privat.** Eine Seite ohne jede Erwerbsabsicht braucht kein Impressum. Diese Einordnung wird durch die in Abschnitt 2 genannte Zielgruppe allerdings erkennbar erschwert.
+
+Die Entscheidung hat Konsequenzen über den Seiteninhalt hinaus: fällt sie auf „geschäftsmäßig", ist die Anschrift öffentlich, und das ist nicht rückholbar. Bis zur Klärung bleibt `/impressum` eine Platzhalterseite.
 
 ---
 
@@ -261,6 +276,11 @@ Bun.serve({
 
 `bun run build.ts` erzeugt statisches HTML/CSS/JS in `dist/`. Ausgeliefert wird ausschließlich dieser Ordner; ein laufender Bun-Prozess ist im Basisumfang nicht nötig. Der Webserver löst URLs ohne Dateiendung auf (`try_files {path} {path}.html`).
 
+Zwei Optionen in `build.ts` sind dafür Voraussetzung und keine Geschmacksfrage:
+
+* **`root: "src/pages"`** – Bun leitet den Build-Root sonst aus dem gemeinsamen Vorfahren aller beteiligten Dateien ab. Sobald ein Asset außerhalb von `pages/` referenziert wird, rutscht der Root nach oben und die Seiten landen in `dist/src/pages/` statt flach in `dist/`. `try_files` findet sie dann nicht.
+* **`splitting: true`** – ohne Code-Splitting bündelt jede Seite ihre eigene React-Kopie (~184 KB je Seite). Mit Splitting teilen sich alle Seiten einen Chunk, den der Browser über den Seitenwechsel hinweg im Cache behält. Genau das entschärft den vollständigen Reload, der der Preis der MPA-Entscheidung ist.
+
 ---
 
 ## 3. Projektstruktur
@@ -272,18 +292,25 @@ Angelegt wird, was tatsächlich gebraucht wird. Ordner kommen dazu, sobald sich 
 ```text
 src/
 │
-├── pages/              # je Seite: index.html + gleichnamige .tsx
-│   ├── index.html
+├── index.ts            # Bun.serve, registriert jede Seite als Route
+│
+├── pages/              # je Seite: name.html + gleichnamige name.tsx
+│   ├── index.html      #   /
 │   ├── index.tsx
-│   ├── about.html
-│   ├── about.tsx
-│   └── 404.html
+│   ├── ueber-mich.html #   /ueber-mich
+│   ├── ueber-mich.tsx
+│   ├── ...             #   lebenslauf, skills, projekte, galerie, kontakt,
+│   ├── 404.html        #   impressum, datenschutz
+│   └── 404.tsx
 │
 ├── components/
-│   ├── layout/         # Navbar, Footer, Container, Section
+│   ├── layout/         # Layout, Navbar, Footer, Container, Section
 │   └── ui/             # Button, Badge, Card, ...
 │
 ├── data/               # Inhalte als typisierte .ts-Dateien
+│
+├── lib/
+│   └── mount.tsx       # HMR-sicherer React-Root, von jeder Seite benutzt
 │
 ├── styles/
 │   └── main.css        # Tailwind-Import + @theme
@@ -293,11 +320,13 @@ src/
 └── assets/
     ├── images/
     ├── videos/
-    ├── icons/
+    ├── icons/          # favicon.svg
     └── fonts/          # selbst gehostete .woff2
 ```
 
-**Später bei Bedarf:** `hooks/`, `lib/`, `utils/`
+Die Slugs sind durchgehend deutsch. `/impressum` und `/datenschutz` sind rechtlich feste Begriffe und ließen sich ohnehin nicht übersetzen – ein gemischtes `/about` daneben wäre inkonsequent.
+
+**Später bei Bedarf:** `hooks/`, `utils/`
 
 Der Alias `@/*` auf `./src/*` ist in `tsconfig.json` bereits konfiguriert.
 
@@ -307,6 +336,7 @@ Der Alias `@/*` auf `./src/*` ist in `tsconfig.json` bereits konfiguriert.
 
 ### Layout
 
+* Layout – klammert Skip-Link, Navbar, `<main>` und Footer. Ohne diese Klammer müssten Landmarks und Skip-Link in jeder Seite dupliziert werden. Nimmt `title` (wird zur `<h1>`) und `activePath` entgegen; letzteres ersetzt das, was ein Router sonst von selbst wüsste.
 * Navbar
 * Footer
 * Container
@@ -431,13 +461,15 @@ Die Seite soll nicht in Suchergebnissen auftauchen. Umgesetzt wird das über zwe
 
 `public/robots.txt` erlaubt das Crawling bewusst weiterhin. Ein `Disallow: /` klingt zwar strenger, verhindert aber genau das Auslesen der `noindex`-Anweisung – die Seite kann dann trotzdem als reiner Link ohne Inhaltsvorschau im Index landen. Crawling erlauben und Indexierung verbieten ist der zuverlässigere Weg.
 
-Dateien unter `public/` werden von `build.ts` unverändert nach `dist/` kopiert.
+Dateien unter `public/` werden von `build.ts` unverändert nach `dist/` kopiert. Das gilt für `robots.txt` und später das Lebenslauf-PDF – also für alles, was seinen Namen behalten muss.
+
+Das Favicon gehört **nicht** dazu: Bun kann einen absoluten Pfad wie `/favicon.svg` im HTML-Kopf nicht auflösen und bricht den Build ab. Es liegt deshalb als `src/assets/icons/favicon.svg` und wird relativ referenziert; der Bundler hasht es und schreibt den fertigen Pfad in jede Seite. Vorteil nebenbei: unbegrenzte Cache-Dauer.
 
 ---
 
 ## 9. Werkzeuge
 
-* **Biome** für Linting und Formatierung – ersetzt ESLint und Prettier durch ein Werkzeug mit einer Konfigurationsdatei
+* **Biome** für Linting und Formatierung – ersetzt ESLint und Prettier durch ein Werkzeug mit einer Konfigurationsdatei. Zwei Einstellungen sind dabei nicht offensichtlich: `css.parser.tailwindDirectives` muss an sein, sonst scheitert Biome am `@theme`- und `@apply`-Syntax von Tailwind 4; und die `a11y`-Regelgruppe ist in `recommended` enthalten, prüft also die Vorgaben aus Lastenheft Abschnitt 6 bereits beim Speichern statt erst beim Lighthouse-Lauf in Phase 5.
 * **Git-Pre-Commit-Hook** (`.githooks/`, aktiviert über `git config core.hooksPath`), der `biome check` und `bunx tsc --noEmit` ausführt. Kein Husky nötig.
 * **`bun test`** als Testrunner
 * **GitHub Actions**: bei jedem Push laufen Typecheck, Biome und Build
@@ -463,6 +495,7 @@ Für eine statische Seite sind Unit-Tests der Datenmodule wenig ergiebig. Sinnvo
 * Docker-Image auf Basis eines schlanken Webserver-Images, das `dist/` ausliefert
 * **Caddy** als Webserver und Reverse Proxy – konfiguriert HTTPS über Let's Encrypt vollautomatisch und ersetzt die Kombination aus Nginx und Certbot
 * HTTP → HTTPS Weiterleitung
+* `handle_errors` auf `dist/404.html` – in der Entwicklung gibt es bewusst keine Catch-all-Route, die eigene Fehlerseite ist dort nur unter `/404` erreichbar. Das automatische Ausliefern bei unbekannten Pfaden ist damit allein Aufgabe von Caddy.
 * Security-Header: `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`
 * `X-Robots-Tag: noindex, nofollow` für alle Antworten (siehe Abschnitt 8)
 * Domain: `leminsky.net`
