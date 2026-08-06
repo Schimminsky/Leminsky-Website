@@ -34,13 +34,15 @@ bun run hooks            # one-time per clone: git config core.hooksPath .githoo
 
 **Multi-page application, no client-side routing.** Each page is its own `.html` entrypoint with a matching `.tsx` that mounts its own React root, under `src/pages/`. Pages are registered explicitly in `src/index.ts` via `Bun.serve({ routes })`. Do not introduce React Router, and do not restore a `"/*"` catch-all route — full page loads are the intended navigation model. See `SPEC.MD` §2 of the Pflichtenheft for the reasoning and trade-offs.
 
-**Build.** `build.ts` discovers entrypoints by globbing `src/**/*.html`, so a new page needs no build config. Two options in it are load-bearing and must not be dropped: `root: "src/pages"` keeps the pages flat in `dist/` (Caddy's `try_files` needs that), and `splitting: true` stops every page from bundling its own copy of React. After bundling it copies `public/` verbatim into `dist/`; that is the only path for static files that must keep their name and location (`robots.txt`, later the CV PDF). The favicon is *not* one of them — Bun cannot resolve an absolute `/favicon.svg` in an HTML head and fails the build, so it lives at `src/assets/icons/favicon.svg` and is referenced relatively.
+**Build.** `build.ts` discovers entrypoints by globbing `src/**/*.html`, so a new page needs no build config. Two options in it are load-bearing and must not be dropped: `root: "src/pages"` keeps the pages flat in `dist/` (Caddy's `try_files` needs that), and `splitting: true` stops every page from bundling its own copy of React. After bundling it copies `public/` verbatim into `dist/`; that is the only path for static files that must keep their name and location (`robots.txt`, gallery media under `public/media/`, later the CV PDF). The favicon is *not* one of them — Bun cannot resolve an absolute `/favicon.svg` in an HTML head and fails the build, so it lives at `src/assets/icons/favicon.svg` and is referenced relatively.
 
 **Deployment.** Production serves the static `dist/` directory through Caddy — no Bun process runs in production. That only changes if a feature from the "requires a server process" tier of `SPEC.MD` §7 gets built, in which case API keys stay server-side in `src/index.ts`.
 
 **Styling.** Tailwind CSS 4 through `bun-plugin-tailwind` (wired into the bundler in `build.ts`, and into dev static serving via `bunfig.toml`). There is no `tailwind.config.js` and there should not be one — theme values go in an `@theme` block in the main CSS file.
 
 **Content.** Site content lives in `src/data/*.ts` as typed TypeScript with `satisfies`, not JSON, so types and autocomplete apply. Types in `src/types/`.
+
+**Media.** Split by whether the bundler should touch the file, not by size. Images imported from a component go in `src/assets/images/` — Bun hashes them, so they cache forever. Gallery photos and all videos go in `public/media/`, which keeps names and URLs stable. Never `import` a video; that pushes the whole file through the bundler on every build for nothing. See `SPEC.MD` §7.
 
 **Prefer platform primitives over dependencies.** `<dialog>` instead of a modal component, `<video controls>` instead of a player, `IntersectionObserver` instead of an animation library. Every new dependency needs a reason.
 
