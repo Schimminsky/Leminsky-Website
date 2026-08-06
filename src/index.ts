@@ -1,41 +1,44 @@
 import { serve } from "bun";
-import index from "./index.html";
 
+import notFound from "./pages/404.html";
+import datenschutz from "./pages/datenschutz.html";
+import galerie from "./pages/galerie.html";
+import impressum from "./pages/impressum.html";
+import home from "./pages/index.html";
+import kontakt from "./pages/kontakt.html";
+import lebenslauf from "./pages/lebenslauf.html";
+import projekte from "./pages/projekte.html";
+import skills from "./pages/skills.html";
+import ueberMich from "./pages/ueber-mich.html";
+
+/**
+ * Entwicklungsserver. In Produktion läuft kein Bun-Prozess – Caddy liefert
+ * das gebaute `dist/` aus (SPEC.MD, Pflichtenheft §2 und §10).
+ *
+ * Jede Seite wird ausdrücklich registriert. Keine `"/*"`-Catch-all-Route:
+ * unbekannte Pfade sollen auch in der Entwicklung als 404 auffallen.
+ */
 const server = serve({
   routes: {
-    // Serve index.html for all unmatched routes.
-    "/*": index,
+    "/": home,
+    "/ueber-mich": ueberMich,
+    "/lebenslauf": lebenslauf,
+    "/skills": skills,
+    "/projekte": projekte,
+    "/galerie": galerie,
+    "/kontakt": kontakt,
+    "/impressum": impressum,
+    "/datenschutz": datenschutz,
 
-    "/api/hello": {
-      async GET(req) {
-        return Response.json({
-          message: "Hello, world!",
-          method: "GET",
-        });
-      },
-      async PUT(req) {
-        return Response.json({
-          message: "Hello, world!",
-          method: "PUT",
-        });
-      },
-    },
-
-    "/api/hello/:name": async req => {
-      const name = req.params.name;
-      return Response.json({
-        message: `Hello, ${name}!`,
-      });
-    },
+    // In Produktion bindet Caddy `dist/404.html` an `handle_errors`.
+    // Hier bleibt die Seite über ihren eigenen Pfad zum Ansehen erreichbar.
+    "/404": notFound,
   },
 
   development: process.env.NODE_ENV !== "production" && {
-    // Enable browser hot reloading in development
     hmr: true,
-
-    // Echo console logs from the browser to the server
     console: true,
   },
 });
 
-console.log(`🚀 Server running at ${server.url}`);
+console.log(`🚀 Server läuft auf ${server.url}`);
