@@ -1,0 +1,17 @@
+#!/bin/sh
+#
+# Aktivieren mit:  bun run hooks   (setzt git config core.hooksPath .githooks)
+#
+# Läuft bewusst über das ganze Repo statt über --staged: das Projekt ist klein,
+# der Lauf dauert Millisekunden, und so kann der Unterschied zwischen Staging
+# und Arbeitsverzeichnis keinen kaputten Commit durchlassen.
+#
+# Umgehen im Notfall:  git commit --no-verify
+
+set -e
+
+echo "pre-commit: lint"
+bun run lint
+
+echo "pre-commit: typecheck"
+bun run typecheck
