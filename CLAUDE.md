@@ -8,6 +8,11 @@ Personal portfolio website for leminsky.net. Site content and all planning docum
 
 `SPEC.MD` is the authoritative Lastenheft/Pflichtenheft — scope, priorities (MoSCoW), phase-by-phase roadmap and acceptance criteria. Read it before making architectural decisions; update it when a decision changes.
 
+Keep your replies extremely concise and focus on conveying the key information. No unnecessary fluff, no long code snippets.
+
+Whenever working with any third-party library or something similar, you MUST look up the official documentation to ensure that you're workin with up-to-date information.
+Use the DocsExplorer subagent for efficient documentation lookup.
+
 Current state: the `bun init` template is gone. The MPA skeleton from Roadmap Phase 1 exists — ten pages under `src/pages/`, the `components/layout/` set, and `styles/main.css` — but every page holds only an `<h1>` and a placeholder sentence. Real content is Phase 2/3. Still open from Phase 1: Biome, the pre-commit hook, GitHub Actions, and self-hosted `.woff2` fonts.
 
 ## Commands
