@@ -317,12 +317,13 @@ src/
 │
 ├── types/
 │
-└── assets/
-    ├── images/
-    ├── videos/
-    ├── icons/          # favicon.svg
-    └── fonts/          # selbst gehostete .woff2
+└── assets/            # nur importierte Assets, siehe Abschnitt 7
+    ├── images/        # Profilbild, Screenshots, Poster – gehasht vom Bundler
+    ├── icons/         # favicon.svg
+    └── fonts/         # selbst gehostete .woff2
 ```
+
+Galeriefotos und Videos liegen **nicht** hier, sondern unter `public/media/` – sie werden nicht importiert, sondern unverändert kopiert. Begründung in Abschnitt 7.
 
 Die Slugs sind durchgehend deutsch. `/impressum` und `/datenschutz` sind rechtlich feste Begriffe und ließen sich ohnehin nicht übersetzen – ein gemischtes `/about` daneben wäre inkonsequent.
 
@@ -441,6 +442,17 @@ Sämtliche Animationen werden in `@media (prefers-reduced-motion: reduce)` deakt
 * natives Vollbild über `<video controls>`
 * Richtwert: maximal 10 MB pro Datei – die Auslieferung erfolgt über den eigenen Server und dessen Bandbreite
 
+### Ablageort
+
+Entscheidend ist nicht die Dateigröße, sondern ob der Bundler die Datei anfassen soll:
+
+* **`src/assets/images/`** – für Bilder, die aus einer Komponente heraus importiert werden (Profilbild, Projekt-Screenshots, Poster-Frames). Bun löst den Import auf und schreibt eine Kopie mit Inhaltshash in den Namen. Der Hash erlaubt `Cache-Control: immutable`, und ein Bildwechsel invalidiert den Cache von selbst.
+* **`public/media/images/` und `public/media/videos/`** – für Galeriematerial und alles, was unter einer stabilen URL erreichbar bleiben muss. `build.ts` kopiert diese Dateien unverändert nach `dist/`. Caddy cacht sie einen Tag.
+
+**Videos gehören nie in `src/assets/`.** Ein `import` würde Bun zwingen, die Datei bei jedem Build durch den Speicher zu schieben, ohne Gegenwert.
+
+Die Entscheidung für `public/` gilt für den derzeit erwarteten Umfang – eine Handvoll Bilder und ein bis zwei Clips. Wächst die Galerie auf dutzende Dateien, wird das Repository durch die Binärdateien in der Git-History dauerhaft schwer; dann sind die Medien auf einen eigenen Ordner außerhalb des Repos umzuziehen (`/srv/media` mit eigenem Root in Caddy). **Wichtig dabei:** `deploy.sh` synchronisiert `dist/` mit `--delete`. Medien, die auf dem Server liegen, aber nicht in `dist/` stehen, würde der nächste Deploy löschen – deshalb der getrennte Root und nicht einfach ein Ordner unter `/srv/www`.
+
 ---
 
 ## 8. Browser-Grundlagen
@@ -501,6 +513,18 @@ Für eine statische Seite sind Unit-Tests der Datenmodule wenig ergiebig. Sinnvo
 * Domain: `leminsky.net`
 
 Ein Bun-Container wird erst nötig, wenn Erweiterungen mit Serverbedarf dazukommen (siehe Lastenheft, Abschnitt 7).
+
+### Zielumgebung: Raspberry Pi im Heimnetz
+
+Entschieden gegen einen gemieteten VPS. Die Domain bleibt bei IONOS, dort wird lediglich der DNS-Eintrag auf die eigene Anschluss-IP gesetzt. Daraus folgen drei Punkte, die ein VPS nicht hätte:
+
+* **Dynamische IP** – der A-Record wird über die IONOS-DynDNS-API aktuell gehalten (systemd-Timer auf dem Pi, Aktualisierung nur bei tatsächlichem Wechsel wegen des Rate-Limits von 2 Anfragen/Minute).
+* **CGNAT ist das K.-o.-Kriterium** – ohne eigene öffentliche IPv4 ist der Anschluss von außen nicht erreichbar. Vor allem Weiteren zu prüfen; Ausweg wäre ein WireGuard-Tunnel über einen kleinen VPS.
+* **ACME-Challenge** – Standardfall ist HTTP-01 über Port 80. Blockiert der Provider den Port, wird auf DNS-01 über die IONOS-DNS-API ausgewichen (Caddy-Build mit `github.com/caddy-dns/ionos`).
+
+Gebaut wird auf dem Entwicklungsrechner, übertragen wird `dist/` per `rsync`. Der Pi baut nichts selbst. Access-Logs schreibt Caddy mit gekürzter Client-IP (`ip_mask 16 32`) – das ersetzt die Datenschutzerklärung nicht, reduziert aber die verarbeiteten Daten.
+
+Konfiguration, Skripte und Runbook liegen in `deploy/`.
 
 ---
 

@@ -1,0 +1,8 @@
+[Unit]
+Description=IONOS DynDNS Update fuer leminsky.net
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/leminsky/deploy/dyndns-update.sh

@@ -15,3 +15,57 @@ bun run lint
 
 echo "pre-commit: typecheck"
 bun run typecheck
+
+echo "pre-commit: EXIF"
+
+# SPEC.MD Abschnitt 5: veröffentlichte Fotos dürfen keine GPS-Koordinaten
+# tragen. Kameras und Smartphones schreiben sie standardmäßig hinein, und die
+# Wohnanschrift soll laut Abschnitt 4 gerade nicht öffentlich sein.
+# Geprüft wird nicht auf EXIF überhaupt, sondern auf die Felder, die eine Person
+# oder einen Ort identifizieren.
+
+media_dirs=""
+for d in public/media src/assets/images; do
+	[ -d "$d" ] && media_dirs="$media_dirs $d"
+done
+
+if [ -n "$media_dirs" ]; then
+	# shellcheck disable=SC2086
+	if find $media_dirs -type f \
+		\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \
+		-o -iname '*.webp' -o -iname '*.avif' -o -iname '*.tif' \
+		-o -iname '*.tiff' -o -iname '*.heic' \) | grep -q .; then
+
+		if ! command -v exiftool >/dev/null 2>&1; then
+			echo >&2
+			echo "  exiftool fehlt, es liegen aber Bilddateien im Repo." >&2
+			echo "  Ohne exiftool ist die GPS-Prüfung wirkungslos - und eine" >&2
+			echo "  Prüfung, die stillschweigend nichts tut, ist schlimmer als keine." >&2
+			echo >&2
+			echo "  Installieren:  sudo apt install libimage-exiftool-perl" >&2
+			echo >&2
+			exit 1
+		fi
+
+		# -if filtert auf die kritischen Tags, -p gibt nur die Treffer aus.
+		# exiftool endet mit 1, wenn keine Datei die Bedingung erfüllt - das ist
+		# hier der Normalfall und darf set -e nicht auslösen.
+		# shellcheck disable=SC2086
+		hits=$(exiftool -r -q -q -m -fast2 \
+			-p '  $Directory/$FileName' \
+			-if '$gpslatitude or $gpslongitude or $serialnumber or $ownername' \
+			-ext jpg -ext jpeg -ext png -ext webp -ext avif \
+			-ext tif -ext tiff -ext heic \
+			$media_dirs 2>/dev/null || true)
+
+		if [ -n "$hits" ]; then
+			echo >&2
+			echo "  Diese Dateien tragen GPS-Koordinaten oder Geräte-Kennungen:" >&2
+			echo "$hits" >&2
+			echo >&2
+			echo "  Bereinigen:  exiftool -all= -overwrite_original <datei>" >&2
+			echo >&2
+			exit 1
+		fi
+	fi
+fi

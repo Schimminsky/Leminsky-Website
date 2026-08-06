@@ -1,0 +1,26 @@
+services:
+  caddy:
+    # Standardfall: Port 80 ist von aussen erreichbar, Caddy nutzt die HTTP-Challenge.
+    # Ist Port 80 blockiert (CGNAT, Provider), stattdessen das eigene Image mit
+    # IONOS-DNS-Modul bauen - dazu die naechsten zwei Zeilen tauschen. Siehe README.
+    image: caddy:2-alpine
+    # build: { context: ., dockerfile: Caddy.dockerfile }
+    container_name: caddy
+    restart: unless-stopped
+    # Host-Networking: erhaelt die echte Client-IP und bindet UDP/443 fuer HTTP/3
+    # ohne Portmapping. Auf einem Single-Service-Pi ist das der einfachere Weg.
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/www:/srv/www:ro
+      # caddy_data haelt die Let's-Encrypt-Zertifikate. Ohne dieses Volume holt
+      # Caddy nach jedem Neustart ein neues Zertifikat und laeuft ins Rate-Limit.
+      - caddy_data:/data
+      - caddy_config:/config
+      - /var/log/caddy:/var/log/caddy
+
+volumes:
+  caddy_data:
+  caddy_config:
