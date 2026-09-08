@@ -17,6 +17,14 @@ const result = await Bun.build({
   // `try_files {path} {path}.html` braucht sie aber flach in dist/.
   root: path.join(process.cwd(), "src/pages"),
   plugins: [tailwind],
+  // Load-bearing, wie `root` und `splitting`: ohne diesen Eintrag versucht Bun
+  // den absoluten Pfad aus dem @font-face in main.css aufzulösen und bricht ab
+  // – derselbe Grund, aus dem das Favicon relativ referenziert wird. Mit
+  // relativem Pfad wiederum bettet Bun die 68-KB-Schrift als data:-URI ins CSS
+  // ein (kleine CSS-Assets werden grundsätzlich inlined), was ein
+  // render-blockierendes CSS von 103 KB ergäbe. `external` lässt die URL
+  // unangetastet; die Datei kommt über den public/-Kopierschritt nach dist/.
+  external: ["/fonts/*"],
   minify: true,
   target: "browser",
   sourcemap: "linked",

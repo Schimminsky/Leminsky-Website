@@ -13,7 +13,7 @@ Keep your replies extremely concise and focus on conveying the key information. 
 Whenever working with any third-party library or something similar, you MUST look up the official documentation to ensure that you're workin with up-to-date information.
 Use the DocsExplorer subagent for efficient documentation lookup.
 
-Current state: the `bun init` template is gone. The MPA skeleton from Roadmap Phase 1 exists — ten pages under `src/pages/`, the `components/layout/` set, and `styles/main.css` — but every page holds only an `<h1>` and a placeholder sentence. Real content is Phase 2/3. Still open from Phase 1: Biome, the pre-commit hook, GitHub Actions, and self-hosted `.woff2` fonts.
+Current state: Roadmap Phase 1 is complete — ten pages under `src/pages/`, the `components/layout/` set, `styles/main.css`, Biome, the pre-commit hook, GitHub Actions, and self-hosted Geist. Every page still holds only an `<h1>` and a placeholder sentence; real content is Phase 2/3 and blocked on Phase 0 (writing it). The deployment config in `deploy/` was built ahead of Phase 6.
 
 ## Commands
 
@@ -34,13 +34,15 @@ bun run hooks            # one-time per clone: git config core.hooksPath .githoo
 
 **Multi-page application, no client-side routing.** Each page is its own `.html` entrypoint with a matching `.tsx` that mounts its own React root, under `src/pages/`. Pages are registered explicitly in `src/index.ts` via `Bun.serve({ routes })`. Do not introduce React Router, and do not restore a `"/*"` catch-all route — full page loads are the intended navigation model. See `SPEC.MD` §2 of the Pflichtenheft for the reasoning and trade-offs.
 
-**Build.** `build.ts` discovers entrypoints by globbing `src/**/*.html`, so a new page needs no build config. Two options in it are load-bearing and must not be dropped: `root: "src/pages"` keeps the pages flat in `dist/` (Caddy's `try_files` needs that), and `splitting: true` stops every page from bundling its own copy of React. After bundling it copies `public/` verbatim into `dist/`; that is the only path for static files that must keep their name and location (`robots.txt`, gallery media under `public/media/`, later the CV PDF). The favicon is *not* one of them — Bun cannot resolve an absolute `/favicon.svg` in an HTML head and fails the build, so it lives at `src/assets/icons/favicon.svg` and is referenced relatively.
+**Build.** `build.ts` discovers entrypoints by globbing `src/**/*.html`, so a new page needs no build config. Three options in it are load-bearing and must not be dropped: `root: "src/pages"` keeps the pages flat in `dist/` (Caddy's `try_files` needs that), `splitting: true` stops every page from bundling its own copy of React, and `external: ["/fonts/*"]` keeps Bun from touching the `@font-face` URL (see Fonts below). After bundling it copies `public/` verbatim into `dist/`; that is the only path for static files that must keep their name and location (`robots.txt`, gallery media under `public/media/`, later the CV PDF). The favicon is *not* one of them — Bun cannot resolve an absolute `/favicon.svg` in an HTML head and fails the build, so it lives at `src/assets/icons/favicon.svg` and is referenced relatively.
 
 **Deployment.** Production serves the static `dist/` directory through Caddy — no Bun process runs in production. That only changes if a feature from the "requires a server process" tier of `SPEC.MD` §7 gets built, in which case API keys stay server-side in `src/index.ts`.
 
 **Styling.** Tailwind CSS 4 through `bun-plugin-tailwind` (wired into the bundler in `build.ts`, and into dev static serving via `bunfig.toml`). There is no `tailwind.config.js` and there should not be one — theme values go in an `@theme` block in the main CSS file.
 
 **Content.** Site content lives in `src/data/*.ts` as typed TypeScript with `satisfies`, not JSON, so types and autocomplete apply. Types in `src/types/`.
+
+**Fonts.** Geist, self-hosted as one variable `.woff2` in `public/fonts/`, referenced by absolute URL from the `@font-face` in `main.css`. Both halves of that are forced: a *relative* path makes Bun inline the 68 KB font as a `data:` URI (it inlines small CSS assets unconditionally), producing a render-blocking 103 KB stylesheet; an *absolute* path makes Bun fail to resolve it unless `external: ["/fonts/*"]` is set in `build.ts`. The version lives in the filename so Caddy can serve it `immutable`. See `SPEC.MD` §6.
 
 **Media.** Split by whether the bundler should touch the file, not by size. Images imported from a component go in `src/assets/images/` — Bun hashes them, so they cache forever. Gallery photos and all videos go in `public/media/`, which keeps names and URLs stable. Never `import` a video; that pushes the whole file through the bundler on every build for nothing. See `SPEC.MD` §7.
 
@@ -68,6 +70,6 @@ Use Bun for everything; it is the runtime, package manager, bundler and test run
 - `Bun.file` over `node:fs` read/write; `Bun.$` over execa
 - Bun loads `.env` automatically — no dotenv
 
-Biome, the pre-commit hook and GitHub Actions are set up. `core.hooksPath` is a per-clone git setting and does not travel with the repo — run `bun run hooks` once after cloning or the hook silently never fires. Still open from Phase 1: self-hosted `.woff2` fonts.
+Biome, the pre-commit hook and GitHub Actions are set up. `core.hooksPath` is a per-clone git setting and does not travel with the repo — run `bun run hooks` once after cloning or the hook silently never fires. The hook also blocks images carrying GPS coordinates and needs `exiftool` (`sudo apt install libimage-exiftool-perl`).
 
 Bun API docs are available offline in `node_modules/bun-types/docs/**.mdx`.
