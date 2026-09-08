@@ -34,6 +34,11 @@
 		# Kompromiss zwischen Upstream-Last und Aktualitaet.
 		@media path /media/*
 		header @media Cache-Control "public, max-age=86400"
+
+		# Die Schrift traegt ihre Version im Dateinamen (Geist-Variable-v1.7.2),
+		# ein Wechsel aendert also den Pfad. Damit ist immutable sicher.
+		@fonts path /fonts/*
+		header @fonts Cache-Control "public, max-age=31536000, immutable"
 	}
 }
 

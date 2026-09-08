@@ -319,11 +319,10 @@ src/
 │
 └── assets/            # nur importierte Assets, siehe Abschnitt 7
     ├── images/        # Profilbild, Screenshots, Poster – gehasht vom Bundler
-    ├── icons/         # favicon.svg
-    └── fonts/         # selbst gehostete .woff2
+    └── icons/         # favicon.svg
 ```
 
-Galeriefotos und Videos liegen **nicht** hier, sondern unter `public/media/` – sie werden nicht importiert, sondern unverändert kopiert. Begründung in Abschnitt 7.
+Nicht hier liegen die Dateien, die unverändert kopiert werden statt importiert zu werden: Galeriefotos und Videos unter `public/media/`, die Schrift unter `public/fonts/`. Begründung jeweils in Abschnitt 7.
 
 Die Slugs sind durchgehend deutsch. `/impressum` und `/datenschutz` sind rechtlich feste Begriffe und ließen sich ohnehin nicht übersetzen – ein gemischtes `/about` daneben wäre inkonsequent.
 
@@ -410,7 +409,13 @@ Definiert wird die Palette einmalig als `@theme`-Block in `src/styles/main.css`,
 
 ### Schriftarten
 
-Inter, Geist oder Manrope – **selbst gehostet** als `.woff2` unter `assets/fonts/`, eingebunden per `@font-face` mit `font-display: swap`. Kein Google-Fonts-CDN (siehe Lastenheft, Abschnitt 5).
+**Geist** (Vercel, SIL OFL 1.1), **selbst gehostet** – kein Google-Fonts-CDN, siehe Lastenheft Abschnitt 5.
+
+Verwendet wird die Variable-Font-Datei `Geist[wght].woff2` aus Release v1.7.2, umbenannt zu `Geist-Variable-v1.7.2.woff2`: 68 KB für den gesamten Bereich 100–900, gegenüber 89 KB allein für Regular und SemiBold. Kursiv fehlt bewusst – weitere 72 KB, die die Seite nicht braucht.
+
+Ablage in **`public/fonts/`**, nicht unter `src/assets/`, eingebunden per `@font-face` mit `font-display: swap` und absoluter URL. Grund: Bun bettet kleine CSS-Assets als `data:`-URI ein, und 68 KB gelten noch als klein – das ergäbe ein render-blockierendes CSS von 103 KB, in dem die Schrift weder getrennt cachebar noch von `font-display` erfasst wäre. Damit Bun die absolute URL nicht aufzulösen versucht und den Build abbricht, steht `external: ["/fonts/*"]` in `build.ts`; der Eintrag ist load-bearing.
+
+Die Version steckt im Dateinamen, damit Caddy die Datei als `immutable` ausliefern kann. Der Lizenztext liegt als `public/fonts/OFL.txt` daneben.
 
 ### Animationen
 

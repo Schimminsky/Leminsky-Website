@@ -1,6 +1,32 @@
 @import "tailwindcss";
 
 /*
+ * Geist, selbst gehostet (SPEC.MD §5: kein Google-Fonts-CDN, das die Besucher-IP
+ * in die USA überträgt). SIL OFL 1.1, Lizenztext liegt neben der Datei.
+ *
+ * Eine Variable-Font-Datei statt einzelner Schnitte: 68 KB für den gesamten
+ * Bereich 100–900, gegenüber 89 KB allein für Regular und SemiBold. Bei einem
+ * Server am Heimanschluss zählt jeder gesparte Kilobyte. Kursiv fehlt bewusst –
+ * weitere 72 KB, die die Seite nicht braucht; der Browser schrägt synthetisch.
+ *
+ * Absoluter Pfad aus public/, nicht relativ aus src/assets/: Bun bettet kleine
+ * CSS-Assets als data:-URI ein, und 68 KB gelten noch als klein. Das Ergebnis
+ * wäre ein render-blockierendes CSS von 103 KB, in dem die Schrift weder
+ * getrennt cachebar noch von font-display: swap erfasst ist. Eine absolute URL
+ * löst Bun nicht auf und lässt sie unverändert stehen.
+ *
+ * Die Version steckt im Dateinamen, damit Caddy die Datei als immutable
+ * ausliefern kann – ein Schriftwechsel ändert den Namen und damit den Cache.
+ */
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Variable-v1.7.2.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
  * Farb- und Schrift-Tokens. Tailwind 4 braucht keine tailwind.config.js –
  * die Palette steht ausschließlich hier (SPEC.MD §6).
  *
@@ -10,7 +36,8 @@
  */
 @theme {
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
 
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
